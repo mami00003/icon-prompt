@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="選ぶだけでSNSアイコン用の画像生成プロンプトができる無料ツール。登録なし。ChatGPT・Gemini・Nano Bananaにそのまま貼れる日本語の指示文を作ります。">
+<meta property="og:title" content="アイコン指示書メーカー">
+<meta property="og:description" content="選ぶだけでSNSアイコン用の指示文ができます。登録なし・無料。">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>アイコン指示書メーカー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Old+Mincho:wght@600&display=swap">
+<style>
+/* Layout: 選択パネル（左）と指示書（右・sticky）の2カラム。狭いと1カラムで指示書が下に回る。
+   色は暗室の道具立てから — 18%グレーの紙地、インクの黒、セーフライトの赤。 */
+:root{
+  --paper:#EDEEF1;
+  --surface:#FFFFFF;
+  --ink:#15171C;
+  --muted:#676D77;
+  --line:#D3D7DE;
+  --safelight:#B3242B;
+  --safelight-soft:#F7E6E7;
+  --shadow:0 1px 2px rgba(21,23,28,.06),0 8px 24px rgba(21,23,28,.06);
+  --font-ui:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+  --font-display:"Zen Old Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+  --font-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#111318;
+    --surface:#191C22;
+    --ink:#E7EAEF;
+    --muted:#949BA5;
+    --line:#2A2F38;
+    --safelight:#FF6065;
+    --safelight-soft:#2E1A1C;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#111318;
+  --surface:#191C22;
+  --ink:#E7EAEF;
+  --muted:#949BA5;
+  --line:#2A2F38;
+  --safelight:#FF6065;
+  --safelight-soft:#2E1A1C;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--font-ui);
+  font-size:15px;
+  line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:32px 56px}
+
+header{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
+.eyebrow{
+  font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--safelight);font-weight:700;
+}
+h1{
+  font-family:var(--font-display);
+  font-size:clamp(28px,5.2vw,40px);
+  line-height:1.25;margin:0;font-weight:600;text-wrap:balance;
+  letter-spacing:.01em;
+}
+.lede{margin:0;color:var(--muted);max-width:62ch;font-size:14.5px}
+
+.cols{display:grid;grid-template-columns:1fr;gap:28px}
+@media (min-width:880px){
+  .cols{grid-template-columns:minmax(0,1fr) minmax(0,420px);gap:36px;align-items:start}
+}
+
+.panel{display:flex;flex-direction:column;gap:22px;min-width:0}
+
+fieldset{
+  border:0;margin:0;padding:0;min-width:0;
+}
+legend{
+  padding:0;font-size:12px;font-weight:700;letter-spacing:.08em;
+  color:var(--muted);margin-bottom:9px;
+}
+legend .hint{font-weight:400;letter-spacing:0;margin-inline-start:8px}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{position:relative;min-width:0}
+.chip input{position:absolute;opacity:0;width:0;height:0}
+.chip span{
+  display:inline-block;padding:7px 13px;border-radius:999px;
+  border:1px solid var(--line);background:var(--surface);
+  font-size:13.5px;line-height:1.4;cursor:pointer;
+  transition:border-color .12s,background .12s,color .12s;
+  user-select:none;
+}
+.chip input:checked + span{
+  border-color:var(--safelight);
+  background:var(--safelight-soft);
+  color:var(--safelight);
+  font-weight:500;
+}
+.chip input:focus-visible + span{outline:2px solid var(--safelight);outline-offset:2px}
+@media (hover:hover){.chip:hover span{border-color:var(--muted)}}
+
+.free{display:flex;flex-direction:column;gap:7px}
+.free input[type="text"]{
+  width:100%;padding:10px 13px;border-radius:10px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  font-family:var(--font-ui);font-size:14px;
+}
+.free input[type="text"]:focus{outline:2px solid var(--safelight);outline-offset:1px;border-color:transparent}
+
+.out{position:relative;min-width:0}
+@media (min-width:880px){
+  .out{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px)}
+}
+.card{
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;box-shadow:var(--shadow);overflow:hidden;
+}
+.card-head{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:13px 16px;border-bottom:1px solid var(--line);
+}
+.card-head h2{
+  margin:0;font-family:var(--font-display);font-weight:600;font-size:16px;letter-spacing:.02em;
+}
+.count{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+pre.sheet{
+  margin:0;padding:16px;font-family:var(--font-mono);font-size:12.5px;line-height:1.85;
+  white-space:pre-wrap;word-break:break-word;max-height:52vh;overflow-y:auto;
+}
+.card-foot{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);flex-wrap:wrap}
+
+button{
+  font-family:var(--font-ui);font-size:13.5px;font-weight:500;
+  padding:9px 15px;border-radius:9px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink);cursor:pointer;
+  transition:border-color .12s,background .12s;
+}
+button:focus-visible{outline:2px solid var(--safelight);outline-offset:2px}
+@media (hover:hover){button:hover{border-color:var(--muted)}}
+button.primary{
+  background:var(--safelight);border-color:var(--safelight);color:#fff;flex:1 1 auto;
+}
+@media (hover:hover){button.primary:hover{border-color:var(--safelight);filter:brightness(1.08)}}
+
+.tips{margin-top:40px;border-top:1px solid var(--line);padding-top:26px}
+.tips h2{font-family:var(--font-display);font-size:18px;font-weight:600;margin:0 0 14px}
+.tips ol{margin:0;padding-inline-start:1.2em;display:flex;flex-direction:column;gap:11px;max-width:66ch}
+.tips li::marker{color:var(--safelight);font-weight:700}
+.tips strong{font-weight:700}
+.tips p{margin:4px 0 0;color:var(--muted);font-size:13.5px}
+
+footer{
+  margin-top:36px;padding-top:22px;border-top:1px solid var(--line);
+  color:var(--muted);font-size:13px;display:flex;flex-direction:column;gap:6px;
+}
+footer b{color:var(--ink);font-weight:700}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">画像生成AI 用</div>
+    <h1>アイコン指示書メーカー</h1>
+    <p class="lede">選ぶだけで、SNSアイコン用の指示文ができます。コピーして ChatGPT・Gemini・Nano Banana などにそのまま貼ってください。英単語を並べる形式ではなく、いまの画像生成が読み取りやすい日本語の文章で出します。</p>
+  </header>
+
+  <div class="cols">
+    <div class="panel" id="panel"></div>
+
+    <div class="out">
+      <div class="card">
+        <div class="card-head">
+          <h2>できた指示書</h2>
+          <span class="count" id="count"></span>
+        </div>
+        <pre class="sheet" id="sheet"></pre>
+        <div class="card-foot">
+          <button type="button" class="primary" id="copy">コピーする</button>
+          <button type="button" id="shuffle">おまかせで選ぶ</button>
+          <button type="button" id="reset">選び直す</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="tips">
+    <h2>うまくいかないときに効く3つ</h2>
+    <ol>
+      <li><strong>一度に全部直さない。</strong>
+        <p>気になる所が3つあっても、1つずつ言い直す。まとめて指示すると、直したかった所以外も一緒に変わります。</p>
+      </li>
+      <li><strong>「〜しないで」より「〜にして」。</strong>
+        <p>「背景をごちゃごちゃさせないで」より「背景は単色にして」。否定形はそのまま無視されることがあります。</p>
+      </li>
+      <li><strong>アイコンは縮小して確認する。</strong>
+        <p>実際に表示されるのは直径40pxほど。画面上で小さくしてみて、何が写っているか分からなければ、要素を減らします。</p>
+      </li>
+    </ol>
+  </section>
+
+  <footer>
+    <div>できた画像、見せてください。どう指示したかも一緒だと、ほかの人の参考になります。</div>
+    <div><b>アイコン指示書メーカー</b> — 無料・登録不要。選んだ内容はこの端末にだけ残ります。</div>
+  </footer>
+</div>
+
+<script>
+const GROUPS = [
+  { id:'subject', label:'だれを描くか', hint:'1つ選ぶ', opts:[
+    '女性','男性','性別を決めない人物','猫','犬','うさぎ','くま','鳥','人ではない記号・マーク'
+  ]},
+  { id:'style', label:'画風', hint:'1つ選ぶ', opts:[
+    '水彩','フラットなイラスト','厚塗り','線画＋淡い塗り','3Dフィギュア風','写真風','ドット絵','切り絵・ペーパークラフト風','レトロなアメコミ風'
+  ]},
+  { id:'crop', label:'どこまで入れるか', hint:'1つ選ぶ', opts:[
+    '顔のアップ','肩から上','バストアップ','全身のミニキャラ'
+  ]},
+  { id:'angle', label:'向き', hint:'1つ選ぶ', opts:[
+    '正面','斜め45度','横顔','少し振り返る'
+  ]},
+  { id:'face', label:'表情', hint:'1つ選ぶ', opts:[
+    'やわらかい微笑み','口を開けて笑う','真顔・凛とした','少し困った顔','目を閉じて穏やか','無表情でクール'
+  ]},
+  { id:'color', label:'色の方向', hint:'1つ選ぶ', opts:[
+    '淡いパステル','くすみカラー','高彩度のポップ','モノトーン＋さし色1色','寒色でまとめる','暖色でまとめる','生成りと木の色'
+  ]},
+  { id:'bg', label:'背景', hint:'1つ選ぶ', opts:[
+    '単色の無地','うしろに丸を1つ','ななめのストライプ','ぼかした室内','ぼかした屋外','白一色（あとで切り抜く）'
+  ]},
+  { id:'light', label:'光', hint:'1つ選ぶ', opts:[
+    '均一でフラット','やわらかい順光','逆光で輪郭が光る','斜め上からの自然光','下からの光で印象的に'
+  ]}
+];
+
+const EXTRA_ID = 'extra';
+const STORE_KEY = 'icon-sheet-v1';
+const state = {};
+
+/* ---------- 画面を組み立てる ---------- */
+const panel = document.getElementById('panel');
+for (const g of GROUPS) {
+  const fs = document.createElement('fieldset');
+  const lg = document.createElement('legend');
+  lg.textContent = g.label;
+  const hint = document.createElement('span');
+  hint.className = 'hint';
+  hint.textContent = g.hint;
+  lg.appendChild(hint);
+  fs.appendChild(lg);
+
+  const chips = document.createElement('div');
+  chips.className = 'chips';
+  g.opts.forEach((opt, i) => {
+    const lab = document.createElement('label');
+    lab.className = 'chip';
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = g.id;
+    input.id = g.id + '-' + i;
+    input.value = opt;
+    input.addEventListener('change', () => { state[g.id] = opt; render(); save(); });
+    const sp = document.createElement('span');
+    sp.textContent = opt;
+    lab.appendChild(input);
+    lab.appendChild(sp);
+    chips.appendChild(lab);
+  });
+  fs.appendChild(chips);
+  panel.appendChild(fs);
+}
+
+const freeWrap = document.createElement('fieldset');
+freeWrap.className = 'free';
+const freeLeg = document.createElement('legend');
+freeLeg.textContent = '足したいもの';
+const freeHint = document.createElement('span');
+freeHint.className = 'hint';
+freeHint.textContent = '髪型・服・小物など。空欄でも作れます';
+freeLeg.appendChild(freeHint);
+freeWrap.appendChild(freeLeg);
+const freeInput = document.createElement('input');
+freeInput.type = 'text';
+freeInput.id = EXTRA_ID;
+freeInput.placeholder = '例：赤いフレームの眼鏡、三つ編み、パーカー';
+freeInput.addEventListener('input', () => { state[EXTRA_ID] = freeInput.value; render(); save(); });
+freeWrap.appendChild(freeInput);
+panel.appendChild(freeWrap);
+
+/* ---------- 指示書を書く ---------- */
+const STYLE_NOTE = {
+  '水彩':'にじみと紙の質感を残す',
+  'フラットなイラスト':'影は最小限、面で塗る',
+  '厚塗り':'筆跡を残し、立体感を出す',
+  '線画＋淡い塗り':'線をはっきり残し、色は薄く乗せる',
+  '3Dフィギュア風':'つやのある質感で、置物のように',
+  '写真風':'実在する人物を特定できないようにする',
+  'ドット絵':'粗めのドットで、色数は絞る',
+  '切り絵・ペーパークラフト風':'紙の重なりと落ち影を出す',
+  'レトロなアメコミ風':'太い線と網点'
+};
+const BG_NOTE = {
+  '単色の無地':'被写体を引き立てる色を1色だけ',
+  'うしろに丸を1つ':'中央に大きめの円。円の外は無地',
+  'ななめのストライプ':'細かくしすぎない',
+  'ぼかした室内':'強くぼかして、何の部屋かは分からない程度に',
+  'ぼかした屋外':'強くぼかして、場所が特定できない程度に',
+  '白一色（あとで切り抜く）':'影も落とさず、純粋な白一色'
+};
+
+function buildSheet(){
+  const lines = [];
+  lines.push('SNSのアイコンにする画像を1枚作ってください。');
+  lines.push('');
+
+  const row = (k, v, note) => {
+    if (!v) return;
+    lines.push('【' + k + '】' + v + (note ? '。' + note : ''));
+  };
+
+  row('だれを', state.subject);
+  row('画風', state.style, STYLE_NOTE[state.style]);
+  row('どこまで', state.crop);
+  row('向き', state.angle);
+  row('表情', state.face);
+  row('色', state.color);
+  row('背景', state.bg, BG_NOTE[state.bg]);
+  row('光', state.light);
+  if (state[EXTRA_ID] && state[EXTRA_ID].trim()) {
+    row('足すもの', state[EXTRA_ID].trim());
+  }
+
+  const rules = [
+    '正方形（1対1）で出力する',
+    '画像の中に文字・ロゴ・サインを入れない',
+    '顔や頭が切れないよう、上下左右に余白を残す'
+  ];
+  if (state.crop === '全身のミニキャラ') {
+    rules.push('小さく表示されるので、頭を大きめ・体を小さめにする');
+  } else {
+    rules.push('小さく表示されても分かるよう、要素を詰め込みすぎない');
+  }
+  if (state.bg === '白一色（あとで切り抜く）') {
+    rules.push('背景は純粋な白のみ。影や模様を置かない');
+  }
+  if (state.style === '写真風') {
+    rules.push('実在の人物に似せない');
+  }
+  if (state.light === '逆光で輪郭が光る') {
+    rules.push('逆光にしても顔は暗くしすぎない');
+  }
+
+  if (lines.length > 2) {
+    lines.push('');
+    lines.push('【必ず守ること】');
+    rules.forEach(r => lines.push('・' + r));
+  }
+  return lines.join('\n');
+}
+
+const sheetEl = document.getElementById('sheet');
+const countEl = document.getElementById('count');
+
+function render(){
+  const chosen = GROUPS.filter(g => state[g.id]).length;
+  if (chosen === 0 && !(state[EXTRA_ID] || '').trim()) {
+    sheetEl.textContent = '左から選ぶと、ここに指示書ができます。\n\n迷ったら「おまかせで選ぶ」を押してください。\n全部まとめて決まります。';
+    countEl.textContent = '0 / ' + GROUPS.length;
+    return;
+  }
+  sheetEl.textContent = buildSheet();
+  countEl.textContent = chosen + ' / ' + GROUPS.length;
+}
+
+/* ---------- ボタン ---------- */
+function applyState(){
+  for (const g of GROUPS) {
+    const v = state[g.id];
+    const i = g.opts.indexOf(v);
+    document.querySelectorAll('input[name="' + g.id + '"]').forEach(el => { el.checked = false; });
+    if (i >= 0) {
+      const el = document.getElementById(g.id + '-' + i);
+      if (el) el.checked = true;
+    }
+  }
+  freeInput.value = state[EXTRA_ID] || '';
+  render();
+}
+
+document.getElementById('shuffle').addEventListener('click', () => {
+  for (const g of GROUPS) {
+    state[g.id] = g.opts[Math.floor(Math.random() * g.opts.length)];
+  }
+  applyState();
+  save();
+});
+
+document.getElementById('reset').addEventListener('click', () => {
+  for (const g of GROUPS) delete state[g.id];
+  state[EXTRA_ID] = '';
+  applyState();
+  save();
+});
+
+const copyBtn = document.getElementById('copy');
+copyBtn.addEventListener('click', async () => {
+  const text = sheetEl.textContent;
+  const done = (msg) => {
+    const old = copyBtn.textContent;
+    copyBtn.textContent = msg;
+    setTimeout(() => { copyBtn.textContent = old; }, 1600);
+  };
+  try {
+    await navigator.clipboard.writeText(text);
+    done('コピーしました');
+  } catch (e) {
+    try {
+      const r = document.createRange();
+      r.selectNodeContents(sheetEl);
+      const s = window.getSelection();
+      s.removeAllRanges();
+      s.addRange(r);
+      done('選択しました。コピーしてください');
+    } catch (e2) {
+      done('コピーできませんでした');
+    }
+  }
+});
+
+/* ---------- 端末に残す ---------- */
+function save(){
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+function load(){
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return false;
+    const o = JSON.parse(raw);
+    if (!o || typeof o !== 'object') return false;
+    Object.assign(state, o);
+    return true;
+  } catch (e) { return false; }
+}
+
+if (!load()) {
+  // 最初に開いた人にも、できあがりが見えている状態で出す
+  state.subject = '猫';
+  state.style = '水彩';
+  state.crop = 'バストアップ';
+  state.angle = '斜め45度';
+  state.face = 'やわらかい微笑み';
+  state.color = 'くすみカラー';
+  state.bg = 'うしろに丸を1つ';
+  state.light = 'やわらかい順光';
+  state[EXTRA_ID] = '';
+}
+applyState();
+</script>
+</body>
+</html>
